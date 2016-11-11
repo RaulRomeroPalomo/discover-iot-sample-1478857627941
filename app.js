@@ -9,10 +9,20 @@ app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.json()); // for parsing application/json
 var appEnv = cfenv.getAppEnv();
 
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var config = null;
-var credentials = null;
+var credentials = {
+    "iotCredentialsIdentifier": "a2g6k39sl6r5",
+    "mqtt_host": "uv94oj.messaging.internetofthings.ibmcloud.com",
+    "mqtt_u_port": 1883,
+    "mqtt_s_port": 8883,
+    "http_host": "uv94oj.internetofthings.ibmcloud.com",
+    "org": "uv94oj",
+    "apiKey": "a-uv94oj-iwsc4t7hkv",
+    "apiToken": "@N4nVFeB7l-(N_zhMP"
+};
 if (process.env.VCAP_SERVICES) {
 	config = JSON.parse(process.env.VCAP_SERVICES);
 
@@ -45,7 +55,36 @@ app.get('/credentials', function(req, res) {
 	res.json(basicConfig);
 });
 
+app.get('/isDeviceMoving', function(req, res){
+
+	var appClientConfig = {
+			org: credentials.org,
+			id: 'myapp',
+		    "auth-key": credentials.apiKey,
+		    "auth-token": credentials.apiToken,
+		    "type" : "shared" // realice esta conexión como suscripción compartida
+	};
+	
+	var appClient = new Client.IotfApplication(appClientConfig);
+	
+	appClient.connect();
+
+	appClient.on("connect", function(){
+		
+		appClient.subscribeToDeviceEvent("myDeviceType", "device01", "+", "json");
+		
+	});
+
+	appClient.on("deviceEvent", function(devideType, devideId, eventType, format, payload){
+		
+		console.log("Device Event from :: "+deviceType+" : "+deviceId+" of event "+eventType+" with payload : "+payload);
+		
+	});
+	
+})
+
 app.get('/iotServiceLink', function(req, res) {
+	
 	var options = {
 		host: basicConfig.org + '.internetofthings.ibmcloud.com',
 		port: 443,
